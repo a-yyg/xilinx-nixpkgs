@@ -1,0 +1,85 @@
+{ pkgs ? import <nixpkgs> {
+    overlays = [
+      (self: super: {
+        elfio = super.elfio.overrideAttrs (oldAttrs: rec {
+          version = "3.12";
+          src = super.fetchFromGitHub {
+            owner = "serge1";
+            repo = "elfio";
+            rev = "Release_${version}";
+            sha256 = "sha256-tDRBscs2L/3gYgLQvb1+8nNxqkr8v1xBkeDXuOqShX4=";
+          };
+          cmakeFlags = [
+            "-DELFIO_BUILD_TESTS=OFF"
+          ];
+        });
+      })
+    ];
+  }
+, version ? "2023.2"
+}:
+pkgs.stdenv.mkDerivation rec {
+  pname = "xrt";
+  inherit version;
+  # src = pkgs.fetchzip {
+  #  url = "https://github.com/Xilinx/XRT/archive/refs/heads/${version}.zip";
+  #  sha256 = "sha256-6/U0E5KSj9O7JtoCFUbitRTwISs/KvS/lDckwh+XNdo=";
+  # };
+  src = pkgs.fetchgit {
+    url = "https://github.com/Xilinx/XRT.git";
+    rev = "fa4c0045003fed0acea4593788dce5ef6d0b66ee";
+    sha256 = "sha256-RoIEnbvimqMCpAuG2v1DniLOWIn2X352HNmYrnyRERA=";
+  };
+
+  nativeBuildInputs = with pkgs; [
+    cmake
+    pkg-config
+    git
+    rapidjson
+    elfio
+  ];
+  buildInputs = with pkgs; [
+    ocl-icd
+    opencl-headers
+    opencl-clhpp
+    libpng12
+    libdrm
+    boost
+    ncurses
+    openssl
+    protobuf
+    libuuid
+    curl
+    udev
+  ];
+
+  patches = [
+    ./cstdint-fix.patch
+  ];
+
+  postPatch = ''
+    XRT_BRANCH=${version}
+    XRT_HASH=${src.rev}
+    XRT_HEAD_COMMITS=7321
+    XRT_BRANCH_COMMITS=6
+    XRT_HASH_DATE="Wed, 11 Oct 2023 20:43:32 -0700"
+    XRT_MODIFIED_FILES=""
+    XRT_DATE_RFC=$XRT_HASH_DATE
+    XRT_MAJOR_VERSION=2
+    XRT_MINOR_VERSION=15
+
+    substituteInPlace src/CMake/config/version.h.in \
+      --replace-fail "@XRT_VERSION_STRING@" "${version}" \
+      --replace-fail "@XRT_BRANCH@" $XRT_BRANCH \
+      --replace-fail "@XRT_HASH@" "$XRT_HASH" \
+      --replace-fail "@XRT_HASH_DATE@" "$XRT_HASH_DATE" \
+      --replace-fail "@XRT_DATE_RFC@" "$XRT_DATE_RFC" \
+      --replace-fail "@XRT_DATE@" "$XRT_DATE_RFC" \
+      --replace-fail "@XRT_MODIFIED_FILES@" "$XRT_MODIFIED_FILES" \
+      --replace-fail "@XRT_VERSION_MAJOR@" "$XRT_MAJOR_VERSION" \
+      --replace-fail "@XRT_VERSION_MINOR@" "$XRT_MINOR_VERSION" \
+      --replace-fail "@XRT_VERSION_PATCH@" "0" \
+      --replace-fail "@XRT_HEAD_COMMITS@" "$XRT_HEAD_COMMITS" \
+      --replace-fail "@XRT_BRANCH_COMMITS@" "$XRT_BRANCH_COMMITS"
+  '';
+}

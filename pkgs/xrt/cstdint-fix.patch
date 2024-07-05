@@ -1,0 +1,101 @@
+diff --git a/src/runtime_src/core/common/time.h b/src/runtime_src/core/common/time.h
+index a4a96b11d..585d38756 100644
+--- a/src/runtime_src/core/common/time.h
++++ b/src/runtime_src/core/common/time.h
+@@ -19,6 +19,7 @@
+ 
+ #include "core/common/config.h"
+ #include <string>
++#include <cstdint>
+ 
+ namespace xrt_core {
+ 
+diff --git a/src/runtime_src/tools/xclbinutil/CBOR.h b/src/runtime_src/tools/xclbinutil/CBOR.h
+index 368459f59..acbf6ebae 100644
+--- a/src/runtime_src/tools/xclbinutil/CBOR.h
++++ b/src/runtime_src/tools/xclbinutil/CBOR.h
+@@ -22,6 +22,7 @@
+ // #includes here - please keep these to a bare minimum!
+ #include <string>
+ #include <sstream>
++#include <cstdint>
+ 
+ // ------------ F O R W A R D - D E C L A R A T I O N S ----------------------
+ // Forward declarations - use these instead whenever possible...
+diff --git a/src/runtime_src/tools/xclbinutil/DTCStringsBlock.h b/src/runtime_src/tools/xclbinutil/DTCStringsBlock.h
+index 361015962..2ec16360d 100644
+--- a/src/runtime_src/tools/xclbinutil/DTCStringsBlock.h
++++ b/src/runtime_src/tools/xclbinutil/DTCStringsBlock.h
+@@ -20,6 +20,7 @@
+ // ----------------------- I N C L U D E S -----------------------------------
+ #include <sstream>
+ #include <string>
++#include <cstdint>
+ 
+ // ----------- C L A S S :   D T C S t r i n g s B l o c k -------------------
+ 
+diff --git a/src/runtime_src/tools/xclbinutil/XclBinSignature.h b/src/runtime_src/tools/xclbinutil/XclBinSignature.h
+index b19ab56a4..f1b72d4d2 100644
+--- a/src/runtime_src/tools/xclbinutil/XclBinSignature.h
++++ b/src/runtime_src/tools/xclbinutil/XclBinSignature.h
+@@ -18,6 +18,7 @@
+ #define __XclBinSignature_h_
+ 
+ #include <string>
++#include <cstdint>
+ 
+ // ----------------------- I N C L U D E S -----------------------------------
+ 
+diff --git a/src/runtime_src/xdp/profile/database/events/vtf_event.h b/src/runtime_src/xdp/profile/database/events/vtf_event.h
+index f8d0121db..b5f36554c 100644
+--- a/src/runtime_src/xdp/profile/database/events/vtf_event.h
++++ b/src/runtime_src/xdp/profile/database/events/vtf_event.h
+@@ -19,6 +19,7 @@
+ #define VTF_EVENT_DOT_H
+ 
+ #include <fstream>
++#include <cstdint>
+ 
+ #include "xdp/config.h"
+ 
+diff --git a/src/runtime_src/xdp/profile/device/aie_trace/aie_trace_logger.h b/src/runtime_src/xdp/profile/device/aie_trace/aie_trace_logger.h
+index 98c57de2e..9f5d1f51d 100644
+--- a/src/runtime_src/xdp/profile/device/aie_trace/aie_trace_logger.h
++++ b/src/runtime_src/xdp/profile/device/aie_trace/aie_trace_logger.h
+@@ -18,6 +18,7 @@
+ #define XDP_PROFILE_AIE_TRACE_LOGGER_H
+ 
+ #include<iostream>
++#include <cstdint>
+ 
+ namespace xdp {
+ 
+diff --git a/src/xma/include/app/xmahw.h b/src/xma/include/app/xmahw.h
+index 229a472ed..db6b9dc30 100644
+--- a/src/xma/include/app/xmahw.h
++++ b/src/xma/include/app/xmahw.h
+@@ -17,6 +17,8 @@
+ #ifndef _XMA_HW_H_
+ #define _XMA_HW_H_
+ 
++#include <cstdint>
++
+ #ifdef __cplusplus
+ extern "C" {
+ #endif
+diff --git a/src/xma/include/plg/xmasess.h b/src/xma/include/plg/xmasess.h
+index 5c66e4e35..bf9761e5a 100644
+--- a/src/xma/include/plg/xmasess.h
++++ b/src/xma/include/plg/xmasess.h
+@@ -20,10 +20,10 @@
+ #define __XMA_SESS_H__
+ 
+ #include <stdbool.h>
++#include <cstdint>
+ 
+ #include "app/xmahw.h"
+ 
+-
+ /**
+  * DOC:
+  * @def @XMA_MAX_CHAN_LOAD - Maximum aggreate load for a kernel supporting
