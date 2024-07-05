@@ -106,11 +106,21 @@ stdenv.mkDerivation rec {
 
     find . -type f \( -iname "*.cmake" -o -iname CMakeLists.txt -o -iname "postinst.in" \) -print0 | \
       xargs -0 --verbose sed -i -e "s!/usr/local/bin!$out/bin!;s!/usr/src/!$out/src/!;s!/etc/OpenCL!$out/etc/OpenCL!;s!/usr/share/pkgconfig!$out/lib/pkgconfig!"
+  '';
 
+  prePatch = ''
     for f in $(grep -lRE '(uint8_t|uint32_t|uint64_t)'); do
 	# sed -i 's|^#include|#include <stdint.h>\n#include|' "$f";
         sed -i.old '1s;^;#include <stdint.h>\n;' "$f"
     done
+
+    # substituteInPlace src/runtime_src/core/pcie/CMakeLists.txt \
+    #     --replace-fail "''${CMAKE_SYSTEM_PROCESSOR} STREQUAL \"x86_64\"" \
+    #                    "TRUE"
+
+    substituteInPlace src/runtime_src/xdp/profile/plugin/CMakeLists.txt \
+        --replace-fail "add_subdirectory(pl_deadlock)" "" \
+        --replace-fail "add_subdirectory(device_offload/hw_emu)" ""
   '';
 
   postInstall = ''
