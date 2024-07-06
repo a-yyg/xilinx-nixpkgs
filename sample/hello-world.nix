@@ -1,7 +1,7 @@
 { stdenv
 , gnumake
 , libuuid
-, xrt
+, xrtPackages
 }:
 stdenv.mkDerivation {
   name = "hello-world";
@@ -10,8 +10,11 @@ stdenv.mkDerivation {
   nativeBuildInputs = [
     gnumake
   ];
+
+  NIX_CFLAGS_COMPILE = "-I${xrtPackages.xrt-2-13}/include/xrt";
+
   buildInputs = [
-    xrt
+    xrtPackages.xrt-2-13
     libuuid
   ];
 

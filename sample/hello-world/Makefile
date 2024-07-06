@@ -46,7 +46,7 @@ CFLAGS := \
           -O0 \
           -fmessage-length=0 \
           -I$(SRC) \
-          -lstdc++ -lrt -luuid -lxrt_coreutil -pthread
+          -lstdc++ -lrt -luuid -lxrt_core -lxrt_coreutil -pthread
 
 
           # -I$(SYSROOT)/usr/include \
