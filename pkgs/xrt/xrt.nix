@@ -25,6 +25,7 @@
 , libffi
 , lsb-release
 , deterministic-uname
+, makeWrapper
 , suffix ? null
 , year ? null
 , sha256 ? lib.fakeSha256
@@ -69,6 +70,7 @@ stdenv.mkDerivation {
     rapidjson
     protobuf
     libxcrypt
+    # makeWrapper
   ] ++ lib.optional edge libffi;
 
   nativeBuildInputs = [
@@ -131,6 +133,10 @@ stdenv.mkDerivation {
     for f in $(grep -lRE '(uint8_t|uint32_t|uint64_t)'); do
         sed -i.old '1s;^;#include <stdint.h>\n;' "$f"
     done
+
+    for f in $(grep -lRE '/usr'); do
+        sed -i -e "s!/usr!$out!g" "$f"
+    done
   ''
     + lib.optionalString (extraAttrs ? prePatch) extraAttrs.prePatch;
 
@@ -142,6 +148,14 @@ stdenv.mkDerivation {
       ln -s /opt/xilinx/firmware $out/opt/xilinx/firmware
       ln -s $out/lib/firmware/xilinx $out/opt/xilinx/xrt/share/fw
     '';
+
+  # postFixup = ''
+  #   wrapProgram $out/bin/xclmgmt
+  # '';
+
+  shellHook = ''
+    XILINX_XRT=$out
+  '';
 
   meta = with lib; {
     description = "xilinx runtime library";

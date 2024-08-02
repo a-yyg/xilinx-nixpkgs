@@ -3,7 +3,7 @@ let
   xrtPkg = pkgs.callPackage ./xrt.nix;
 in
 rec {
-  xrt = xrt-2-16;
+  xrt = xrt-2-13;
 
   xrt-2-16 = xrtPkg rec {
     suffix = "2.16.204";
