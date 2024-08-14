@@ -24,19 +24,24 @@
 
     mkXclbinFirmwareKV260 = pkgs-x86.callPackage ./libs/xclbin {};
     webpEncFirmware = mkXclbinFirmwareKV260 ./webpEnc.xclbin;
+    allPkgs = pkgs: pkgs.lib.attrsets.filterAttrs
+      (n: v: pkgs-x86.lib.attrsets.isDerivation v)
+      (pkgs.callPackage ./pkgs/default.nix {});
   in
-  {
-    packages.x86_64-linux = {
-      inherit webpEncFirmware;
-      inherit (pkgs-x86.xrtPackages) xrt;
-      inherit (pkgs-x86) libwebp-jacklicn;
-    };
+  rec {
+    # packages.x86_64-linux = {
+    #   inherit webpEncFirmware;
+    #   inherit (pkgs-x86.xrtPackages) xrt;
+    #   inherit (pkgs-x86) libwebp-jacklicn;
+    # };
+    packages.x86_64-linux = allPkgs pkgs-x86;
 
-    packages.aarch64-linux = {
+    packages.aarch64-linux = (allPkgs pkgs-aarch64) // {
       webpEncHost = pkgs-aarch64.webpEncHost.override {
         platformNew = "edge";
       };
-      inherit (pkgs-aarch64) libwebp-jacklicn;
-    }; 
+    };
+
+    # overlays.default = import ./pkgs/overlay.nix;
   };
 }

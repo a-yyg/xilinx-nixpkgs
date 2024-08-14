@@ -8,7 +8,7 @@
 , libpng
 , opencl-headers
 , vitis-hls-headers
-, xrtPackages
+, xrt
 , makeWrapper
 , version ? "2023.2_update1"
 , arch ? if stdenv.hostPlatform.isAarch64 then "aarch64" else "x86"
@@ -48,13 +48,13 @@ stdenv.mkDerivation {
   ];
 
   NIX_CFLAGS_COMPILE = lib.strings.concatStringsSep " " [
-    "-I${xrtPackages.xrt-2-13}/include/xrt"
+    "-I${xrt}/include/xrt"
     "-I${vitis-hls-headers}/include"
     "-I${vitis-utils}/L1/include"
   ];
 
   buildInputs = [
-    xrtPackages.xrt-2-13
+    xrt
     libuuid
     lsb-release
     opencl-headers
@@ -93,7 +93,7 @@ stdenv.mkDerivation {
 
   postFixup = ''
     wrapProgram $out/bin/cwebp \
-      --set XILINX_XRT ${xrtPackages.xrt-2-13}
+      --set XILINX_XRT ${xrt}
   '';
 
   meta = with stdenv.lib; {
