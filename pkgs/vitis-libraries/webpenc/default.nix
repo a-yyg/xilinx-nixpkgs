@@ -1,4 +1,5 @@
 { lib
+, pkgs
 , stdenv
 , fetchzip
 , gnumake
@@ -15,7 +16,9 @@
 , target ? "hw"
 , platform ? "xilinx_u200_xdma_201830_2"
 , platformNew ? "xilinx_u200_xdma_201830_2"
-}:
+, withJpeg ? true
+}@inputs:
+with lib.attrsets;
 let
   vitis-libraries-src = fetchzip {
     url = "https://github.com/Xilinx/Vitis_Libraries/archive/refs/tags/v${version}.zip";
@@ -47,11 +50,16 @@ stdenv.mkDerivation {
     gnumake
   ];
 
-  NIX_CFLAGS_COMPILE = lib.strings.concatStringsSep " " [
+  NIX_CFLAGS_COMPILE = lib.strings.concatStringsSep " " ([
     "-I${xrt}/include/xrt"
     "-I${vitis-hls-headers}/include"
     "-I${vitis-utils}/L1/include"
-  ];
+  ] ++ lib.optionals withJpeg [
+    "-DWEBP_HAVE_JPEG"
+    "-I${getDev pkgs.libjpeg}/include"
+    "-L${getLib pkgs.libjpeg}/lib"
+    "-ljpeg"
+    ]);
 
   buildInputs = [
     xrt
@@ -62,7 +70,7 @@ stdenv.mkDerivation {
     libpng
     which
     makeWrapper
-  ];
+  ] ++ lib.optional withJpeg pkgs.libjpeg;
 
   postPatch = ''
     substituteInPlace Makefile \
