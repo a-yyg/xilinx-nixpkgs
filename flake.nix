@@ -37,9 +37,9 @@
     packages.x86_64-linux = allPkgs pkgs-x86;
 
     packages.aarch64-linux = (allPkgs pkgs-aarch64) // {
-      webpEncHost = pkgs-aarch64.webpEncHost.override {
-        platformNew = "edge";
-      };
+      # webpEncHost = pkgs-aarch64.webpEncHost.override {
+      #   platformNew = "edge";
+      # };
     };
 
     # overlays.default = import ./pkgs/overlay.nix;

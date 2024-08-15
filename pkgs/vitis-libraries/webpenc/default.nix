@@ -17,6 +17,7 @@
 , platform ? "xilinx_u200_xdma_201830_2"
 , platformNew ? "xilinx_u200_xdma_201830_2"
 , withJpeg ? true
+, nbInstances ? 1
 }@inputs:
 with lib.attrsets;
 let
@@ -76,7 +77,8 @@ stdenv.mkDerivation {
     substituteInPlace Makefile \
       --replace-fail "host: check_sysroot" "host: " \
       --replace-fail "include ./utils.mk" "" \
-      --replace-fail "\$(XFLIB_DIR)/L2/demos/webpEnc/" ""
+      --replace-fail "\$(XFLIB_DIR)/L2/demos/webpEnc/" "" \
+      --replace-fail "@NbInstances@" "${toString nbInstances}"
 
     # sed -i 's|.*platforminfo.*||' utils.mk
     # sed -i 's|.*v++.*||' utils.mk
