@@ -13,8 +13,8 @@
 
 #include <assert.h>
 
-#include "./dsp.h"
 #include "../utils/rescaler.h"
+#include "./dsp.h"
 
 //------------------------------------------------------------------------------
 // Implementations of critical functions ImportRow / ExportRow
@@ -25,129 +25,130 @@
 //------------------------------------------------------------------------------
 // Row import
 
-void WebPRescalerImportRowExpandC(WebPRescaler* const wrk, const uint8_t* src) {
-    const int x_stride = wrk->num_channels;
-    const int x_out_max = wrk->dst_width * wrk->num_channels;
-    int channel;
-    assert(!WebPRescalerInputDone(wrk));
-    assert(wrk->x_expand);
-    for (channel = 0; channel < x_stride; ++channel) {
-        int x_in = channel;
-        int x_out = channel;
-        // simple bilinear interpolation
-        int accum = wrk->x_add;
-        int left = src[x_in];
-        int right = (wrk->src_width > 1) ? src[x_in + x_stride] : left;
+void WebPRescalerImportRowExpandC(WebPRescaler *const wrk, const uint8_t *src) {
+  const int x_stride = wrk->num_channels;
+  const int x_out_max = wrk->dst_width * wrk->num_channels;
+  int channel;
+  assert(!WebPRescalerInputDone(wrk));
+  assert(wrk->x_expand);
+  for (channel = 0; channel < x_stride; ++channel) {
+    int x_in = channel;
+    int x_out = channel;
+    // simple bilinear interpolation
+    int accum = wrk->x_add;
+    int left = src[x_in];
+    int right = (wrk->src_width > 1) ? src[x_in + x_stride] : left;
+    x_in += x_stride;
+    while (1) {
+      wrk->frow[x_out] = right * wrk->x_add + (left - right) * accum;
+      x_out += x_stride;
+      if (x_out >= x_out_max)
+        break;
+      accum -= wrk->x_sub;
+      if (accum < 0) {
+        left = right;
         x_in += x_stride;
-        while (1) {
-            wrk->frow[x_out] = right * wrk->x_add + (left - right) * accum;
-            x_out += x_stride;
-            if (x_out >= x_out_max) break;
-            accum -= wrk->x_sub;
-            if (accum < 0) {
-                left = right;
-                x_in += x_stride;
-                assert(x_in < wrk->src_width * x_stride);
-                right = src[x_in];
-                accum += wrk->x_add;
-            }
-        }
-        assert(wrk->x_sub == 0 /* <- special case for src_width=1 */ || accum == 0);
+        assert(x_in < wrk->src_width * x_stride);
+        right = src[x_in];
+        accum += wrk->x_add;
+      }
     }
+    assert(wrk->x_sub == 0 /* <- special case for src_width=1 */ || accum == 0);
+  }
 }
 
-void WebPRescalerImportRowShrinkC(WebPRescaler* const wrk, const uint8_t* src) {
-    const int x_stride = wrk->num_channels;
-    const int x_out_max = wrk->dst_width * wrk->num_channels;
-    int channel;
-    assert(!WebPRescalerInputDone(wrk));
-    assert(!wrk->x_expand);
-    for (channel = 0; channel < x_stride; ++channel) {
-        int x_in = channel;
-        int x_out = channel;
-        uint32_t sum = 0;
-        int accum = 0;
-        while (x_out < x_out_max) {
-            uint32_t base = 0;
-            accum += wrk->x_add;
-            while (accum > 0) {
-                accum -= wrk->x_sub;
-                assert(x_in < wrk->src_width * x_stride);
-                base = src[x_in];
-                sum += base;
-                x_in += x_stride;
-            }
-            { // Emit next horizontal pixel.
-                const rescaler_t frac = base * (-accum);
-                wrk->frow[x_out] = sum * wrk->x_sub - frac;
-                // fresh fractional start for next pixel
-                sum = (int)MULT_FIX(frac, wrk->fx_scale);
-            }
-            x_out += x_stride;
-        }
-        assert(accum == 0);
+void WebPRescalerImportRowShrinkC(WebPRescaler *const wrk, const uint8_t *src) {
+  const int x_stride = wrk->num_channels;
+  const int x_out_max = wrk->dst_width * wrk->num_channels;
+  int channel;
+  assert(!WebPRescalerInputDone(wrk));
+  assert(!wrk->x_expand);
+  for (channel = 0; channel < x_stride; ++channel) {
+    int x_in = channel;
+    int x_out = channel;
+    uint32_t sum = 0;
+    int accum = 0;
+    while (x_out < x_out_max) {
+      uint32_t base = 0;
+      accum += wrk->x_add;
+      while (accum > 0) {
+        accum -= wrk->x_sub;
+        assert(x_in < wrk->src_width * x_stride);
+        base = src[x_in];
+        sum += base;
+        x_in += x_stride;
+      }
+      { // Emit next horizontal pixel.
+        const rescaler_t frac = base * (-accum);
+        wrk->frow[x_out] = sum * wrk->x_sub - frac;
+        // fresh fractional start for next pixel
+        sum = (int)MULT_FIX(frac, wrk->fx_scale);
+      }
+      x_out += x_stride;
     }
+    assert(accum == 0);
+  }
 }
 
 //------------------------------------------------------------------------------
 // Row export
 
-void WebPRescalerExportRowExpandC(WebPRescaler* const wrk) {
-    int x_out;
-    uint8_t* const dst = wrk->dst;
-    rescaler_t* const irow = wrk->irow;
-    const int x_out_max = wrk->dst_width * wrk->num_channels;
-    const rescaler_t* const frow = wrk->frow;
-    assert(!WebPRescalerOutputDone(wrk));
-    assert(wrk->y_accum <= 0);
-    assert(wrk->y_expand);
-    assert(wrk->y_sub != 0);
-    if (wrk->y_accum == 0) {
-        for (x_out = 0; x_out < x_out_max; ++x_out) {
-            const uint32_t J = frow[x_out];
-            const int v = (int)MULT_FIX(J, wrk->fy_scale);
-            assert(v >= 0 && v <= 255);
-            dst[x_out] = v;
-        }
-    } else {
-        const uint32_t B = WEBP_RESCALER_FRAC(-wrk->y_accum, wrk->y_sub);
-        const uint32_t A = (uint32_t)(WEBP_RESCALER_ONE - B);
-        for (x_out = 0; x_out < x_out_max; ++x_out) {
-            const uint64_t I = (uint64_t)A * frow[x_out] + (uint64_t)B * irow[x_out];
-            const uint32_t J = (uint32_t)((I + ROUNDER) >> WEBP_RESCALER_RFIX);
-            const int v = (int)MULT_FIX(J, wrk->fy_scale);
-            assert(v >= 0 && v <= 255);
-            dst[x_out] = v;
-        }
+void WebPRescalerExportRowExpandC(WebPRescaler *const wrk) {
+  int x_out;
+  uint8_t *const dst = wrk->dst;
+  rescaler_t *const irow = wrk->irow;
+  const int x_out_max = wrk->dst_width * wrk->num_channels;
+  const rescaler_t *const frow = wrk->frow;
+  assert(!WebPRescalerOutputDone(wrk));
+  assert(wrk->y_accum <= 0);
+  assert(wrk->y_expand);
+  assert(wrk->y_sub != 0);
+  if (wrk->y_accum == 0) {
+    for (x_out = 0; x_out < x_out_max; ++x_out) {
+      const uint32_t J = frow[x_out];
+      const int v = (int)MULT_FIX(J, wrk->fy_scale);
+      assert(v >= 0 && v <= 255);
+      dst[x_out] = v;
     }
+  } else {
+    const uint32_t B = WEBP_RESCALER_FRAC(-wrk->y_accum, wrk->y_sub);
+    const uint32_t A = (uint32_t)(WEBP_RESCALER_ONE - B);
+    for (x_out = 0; x_out < x_out_max; ++x_out) {
+      const uint64_t I = (uint64_t)A * frow[x_out] + (uint64_t)B * irow[x_out];
+      const uint32_t J = (uint32_t)((I + ROUNDER) >> WEBP_RESCALER_RFIX);
+      const int v = (int)MULT_FIX(J, wrk->fy_scale);
+      assert(v >= 0 && v <= 255);
+      dst[x_out] = v;
+    }
+  }
 }
 
-void WebPRescalerExportRowShrinkC(WebPRescaler* const wrk) {
-    int x_out;
-    uint8_t* const dst = wrk->dst;
-    rescaler_t* const irow = wrk->irow;
-    const int x_out_max = wrk->dst_width * wrk->num_channels;
-    const rescaler_t* const frow = wrk->frow;
-    const uint32_t yscale = wrk->fy_scale * (-wrk->y_accum);
-    assert(!WebPRescalerOutputDone(wrk));
-    assert(wrk->y_accum <= 0);
-    assert(!wrk->y_expand);
-    if (yscale) {
-        for (x_out = 0; x_out < x_out_max; ++x_out) {
-            const uint32_t frac = (uint32_t)MULT_FIX(frow[x_out], yscale);
-            const int v = (int)MULT_FIX(irow[x_out] - frac, wrk->fxy_scale);
-            assert(v >= 0 && v <= 255);
-            dst[x_out] = v;
-            irow[x_out] = frac; // new fractional start
-        }
-    } else {
-        for (x_out = 0; x_out < x_out_max; ++x_out) {
-            const int v = (int)MULT_FIX(irow[x_out], wrk->fxy_scale);
-            assert(v >= 0 && v <= 255);
-            dst[x_out] = v;
-            irow[x_out] = 0;
-        }
+void WebPRescalerExportRowShrinkC(WebPRescaler *const wrk) {
+  int x_out;
+  uint8_t *const dst = wrk->dst;
+  rescaler_t *const irow = wrk->irow;
+  const int x_out_max = wrk->dst_width * wrk->num_channels;
+  const rescaler_t *const frow = wrk->frow;
+  const uint32_t yscale = wrk->fy_scale * (-wrk->y_accum);
+  assert(!WebPRescalerOutputDone(wrk));
+  assert(wrk->y_accum <= 0);
+  assert(!wrk->y_expand);
+  if (yscale) {
+    for (x_out = 0; x_out < x_out_max; ++x_out) {
+      const uint32_t frac = (uint32_t)MULT_FIX(frow[x_out], yscale);
+      const int v = (int)MULT_FIX(irow[x_out] - frac, wrk->fxy_scale);
+      assert(v >= 0 && v <= 255);
+      dst[x_out] = v;
+      irow[x_out] = frac; // new fractional start
     }
+  } else {
+    for (x_out = 0; x_out < x_out_max; ++x_out) {
+      const int v = (int)MULT_FIX(irow[x_out], wrk->fxy_scale);
+      assert(v >= 0 && v <= 255);
+      dst[x_out] = v;
+      irow[x_out] = 0;
+    }
+  }
 }
 
 #undef MULT_FIX
@@ -156,35 +157,35 @@ void WebPRescalerExportRowShrinkC(WebPRescaler* const wrk) {
 //------------------------------------------------------------------------------
 // Main entry calls
 
-void WebPRescalerImportRow(WebPRescaler* const wrk, const uint8_t* src) {
-    assert(!WebPRescalerInputDone(wrk));
-    if (!wrk->x_expand) {
-        WebPRescalerImportRowShrink(wrk, src);
-    } else {
-        WebPRescalerImportRowExpand(wrk, src);
-    }
+void WebPRescalerImportRow(WebPRescaler *const wrk, const uint8_t *src) {
+  assert(!WebPRescalerInputDone(wrk));
+  if (!wrk->x_expand) {
+    WebPRescalerImportRowShrink(wrk, src);
+  } else {
+    WebPRescalerImportRowExpand(wrk, src);
+  }
 }
 
-void WebPRescalerExportRow(WebPRescaler* const wrk) {
-    if (wrk->y_accum <= 0) {
-        assert(!WebPRescalerOutputDone(wrk));
-        if (wrk->y_expand) {
-            WebPRescalerExportRowExpand(wrk);
-        } else if (wrk->fxy_scale) {
-            WebPRescalerExportRowShrink(wrk);
-        } else { // very special case for src = dst = 1x1
-            int i;
-            assert(wrk->src_width == 1 && wrk->dst_width <= 2);
-            assert(wrk->src_height == 1 && wrk->dst_height == 1);
-            for (i = 0; i < wrk->num_channels * wrk->dst_width; ++i) {
-                wrk->dst[i] = wrk->irow[i];
-                wrk->irow[i] = 0;
-            }
-        }
-        wrk->y_accum += wrk->y_add;
-        wrk->dst += wrk->dst_stride;
-        ++wrk->dst_y;
+void WebPRescalerExportRow(WebPRescaler *const wrk) {
+  if (wrk->y_accum <= 0) {
+    assert(!WebPRescalerOutputDone(wrk));
+    if (wrk->y_expand) {
+      WebPRescalerExportRowExpand(wrk);
+    } else if (wrk->fxy_scale) {
+      WebPRescalerExportRowShrink(wrk);
+    } else { // very special case for src = dst = 1x1
+      int i;
+      assert(wrk->src_width == 1 && wrk->dst_width <= 2);
+      assert(wrk->src_height == 1 && wrk->dst_height == 1);
+      for (i = 0; i < wrk->num_channels * wrk->dst_width; ++i) {
+        wrk->dst[i] = wrk->irow[i];
+        wrk->irow[i] = 0;
+      }
     }
+    wrk->y_accum += wrk->y_add;
+    wrk->dst += wrk->dst_stride;
+    ++wrk->dst_y;
+  }
 }
 
 //------------------------------------------------------------------------------
@@ -200,37 +201,39 @@ extern void WebPRescalerDspInitMIPS32(void);
 extern void WebPRescalerDspInitMIPSdspR2(void);
 extern void WebPRescalerDspInitNEON(void);
 
-static volatile VP8CPUInfo rescaler_last_cpuinfo_used = (VP8CPUInfo)&rescaler_last_cpuinfo_used;
+static volatile VP8CPUInfo rescaler_last_cpuinfo_used =
+    (VP8CPUInfo)&rescaler_last_cpuinfo_used;
 
 WEBP_TSAN_IGNORE_FUNCTION void WebPRescalerDspInit(void) {
-    if (rescaler_last_cpuinfo_used == VP8GetCPUInfo) return;
+  if (rescaler_last_cpuinfo_used == VP8GetCPUInfo)
+    return;
 
-    WebPRescalerImportRowExpand = WebPRescalerImportRowExpandC;
-    WebPRescalerImportRowShrink = WebPRescalerImportRowShrinkC;
-    WebPRescalerExportRowExpand = WebPRescalerExportRowExpandC;
-    WebPRescalerExportRowShrink = WebPRescalerExportRowShrinkC;
+  WebPRescalerImportRowExpand = WebPRescalerImportRowExpandC;
+  WebPRescalerImportRowShrink = WebPRescalerImportRowShrinkC;
+  WebPRescalerExportRowExpand = WebPRescalerExportRowExpandC;
+  WebPRescalerExportRowShrink = WebPRescalerExportRowShrinkC;
 
-    if (VP8GetCPUInfo != NULL) {
+  if (VP8GetCPUInfo != NULL) {
 #if defined(WEBP_USE_SSE2)
-        if (VP8GetCPUInfo(kSSE2)) {
-            WebPRescalerDspInitSSE2();
-        }
+    if (VP8GetCPUInfo(kSSE2)) {
+      WebPRescalerDspInitSSE2();
+    }
 #endif
 #if defined(WEBP_USE_NEON)
-        if (VP8GetCPUInfo(kNEON)) {
-            WebPRescalerDspInitNEON();
-        }
+    if (VP8GetCPUInfo(kNEON)) {
+      WebPRescalerDspInitNEON();
+    }
 #endif
 #if defined(WEBP_USE_MIPS32)
-        if (VP8GetCPUInfo(kMIPS32)) {
-            WebPRescalerDspInitMIPS32();
-        }
+    if (VP8GetCPUInfo(kMIPS32)) {
+      WebPRescalerDspInitMIPS32();
+    }
 #endif
 #if defined(WEBP_USE_MIPS_DSP_R2)
-        if (VP8GetCPUInfo(kMIPSdspR2)) {
-            WebPRescalerDspInitMIPSdspR2();
-        }
-#endif
+    if (VP8GetCPUInfo(kMIPSdspR2)) {
+      WebPRescalerDspInitMIPSdspR2();
     }
-    rescaler_last_cpuinfo_used = VP8GetCPUInfo;
+#endif
+  }
+  rescaler_last_cpuinfo_used = VP8GetCPUInfo;
 }

@@ -18,44 +18,37 @@
 // TODO(djordje.pesut): adapt the code to reflect the C-version.
 #if 0 // defined(WEBP_USE_MIPS_DSP_R2)
 
-#include <assert.h>
 #include "./yuv.h"
+#include <assert.h>
 
 #if !defined(WEBP_YUV_USE_TABLE)
 
-#define YUV_TO_RGB(Y, U, V, R, G, B)                                                          \
-    do {                                                                                      \
-        const int t1 = kYScale * Y;                                                           \
-        const int t2 = kVToG * V;                                                             \
-        R = kVToR * V;                                                                        \
-        G = kUToG * U;                                                                        \
-        B = kUToB * U;                                                                        \
-        R = t1 + R;                                                                           \
-        G = t1 - G;                                                                           \
-        B = t1 + B;                                                                           \
-        R = R + kRCst;                                                                        \
-        G = G - t2 + kGCst;                                                                   \
-        B = B + kBCst;                                                                        \
-        __asm__ volatile("shll_s.w         %[" #R "],      %[" #R                             \
-                         "],        9          \n\t"                                          \
-                         "shll_s.w         %[" #G "],      %[" #G                             \
-                         "],        9          \n\t"                                          \
-                         "shll_s.w         %[" #B "],      %[" #B                             \
-                         "],        9          \n\t"                                          \
-                         "precrqu_s.qb.ph  %[" #R "],      %[" #R                             \
-                         "],        $zero      \n\t"                                          \
-                         "precrqu_s.qb.ph  %[" #G "],      %[" #G                             \
-                         "],        $zero      \n\t"                                          \
-                         "precrqu_s.qb.ph  %[" #B "],      %[" #B                             \
-                         "],        $zero      \n\t"                                          \
-                         "srl              %[" #R "],      %[" #R                             \
-                         "],        24         \n\t"                                          \
-                         "srl              %[" #G "],      %[" #G                             \
-                         "],        24         \n\t"                                          \
-                         "srl              %[" #B "],      %[" #B "],        24         \n\t" \
-                         : [R] "+r"(R), [G] "+r"(G), [B] "+r"(B)                              \
-                         :);                                                                  \
-    } while (0)
+#define YUV_TO_RGB(Y, U, V, R, G, B)                                           \
+  do {                                                                         \
+    const int t1 = kYScale * Y;                                                \
+    const int t2 = kVToG * V;                                                  \
+    R = kVToR * V;                                                             \
+    G = kUToG * U;                                                             \
+    B = kUToB * U;                                                             \
+    R = t1 + R;                                                                \
+    G = t1 - G;                                                                \
+    B = t1 + B;                                                                \
+    R = R + kRCst;                                                             \
+    G = G - t2 + kGCst;                                                        \
+    B = B + kBCst;                                                             \
+    __asm__ volatile(                                                          \
+        "shll_s.w         %[" #R "],      %[" #R "],        9          \n\t"   \
+        "shll_s.w         %[" #G "],      %[" #G "],        9          \n\t"   \
+        "shll_s.w         %[" #B "],      %[" #B "],        9          \n\t"   \
+        "precrqu_s.qb.ph  %[" #R "],      %[" #R "],        $zero      \n\t"   \
+        "precrqu_s.qb.ph  %[" #G "],      %[" #G "],        $zero      \n\t"   \
+        "precrqu_s.qb.ph  %[" #B "],      %[" #B "],        $zero      \n\t"   \
+        "srl              %[" #R "],      %[" #R "],        24         \n\t"   \
+        "srl              %[" #G "],      %[" #G "],        24         \n\t"   \
+        "srl              %[" #B "],      %[" #B "],        24         \n\t"   \
+        : [R] "+r"(R), [G] "+r"(G), [B] "+r"(B)                                \
+        :);                                                                    \
+  } while (0)
 
 static WEBP_INLINE void YuvToRgb(int y, int u, int v, uint8_t* const rgb) {
   int r, g, b;
@@ -150,56 +143,64 @@ static WEBP_INLINE void YuvToRgba(uint8_t y, uint8_t u, uint8_t v,
 // We process u and v together stashed into 32bit (16bit each).
 #define LOAD_UV(u, v) ((u) | ((v) << 16))
 
-#define UPSAMPLE_FUNC(FUNC_NAME, FUNC, XSTEP)                                                                        \
-    static void FUNC_NAME(const uint8_t* top_y, const uint8_t* bottom_y, const uint8_t* top_u, const uint8_t* top_v, \
-                          const uint8_t* cur_u, const uint8_t* cur_v, uint8_t* top_dst, uint8_t* bottom_dst,         \
-                          int len) {                                                                                 \
-        int x;                                                                                                       \
-        const int last_pixel_pair = (len - 1) >> 1;                                                                  \
-        uint32_t tl_uv = LOAD_UV(top_u[0], top_v[0]); /* top-left sample */                                          \
-        uint32_t l_uv = LOAD_UV(cur_u[0], cur_v[0]);  /* left-sample */                                              \
-        assert(top_y != NULL);                                                                                       \
-        {                                                                                                            \
-            const uint32_t uv0 = (3 * tl_uv + l_uv + 0x00020002u) >> 2;                                              \
-            FUNC(top_y[0], uv0 & 0xff, (uv0 >> 16), top_dst);                                                        \
-        }                                                                                                            \
-        if (bottom_y != NULL) {                                                                                      \
-            const uint32_t uv0 = (3 * l_uv + tl_uv + 0x00020002u) >> 2;                                              \
-            FUNC(bottom_y[0], uv0 & 0xff, (uv0 >> 16), bottom_dst);                                                  \
-        }                                                                                                            \
-        for (x = 1; x <= last_pixel_pair; ++x) {                                                                     \
-            const uint32_t t_uv = LOAD_UV(top_u[x], top_v[x]); /* top sample */                                      \
-            const uint32_t uv = LOAD_UV(cur_u[x], cur_v[x]);   /* sample */                                            \
-            /* precompute invariant values associated with first and second diagonals*/                              \
-            const uint32_t avg = tl_uv + t_uv + l_uv + uv + 0x00080008u;                                             \
-            const uint32_t diag_12 = (avg + 2 * (t_uv + l_uv)) >> 3;                                                 \
-            const uint32_t diag_03 = (avg + 2 * (tl_uv + uv)) >> 3;                                                  \
-            {                                                                                                        \
-                const uint32_t uv0 = (diag_12 + tl_uv) >> 1;                                                         \
-                const uint32_t uv1 = (diag_03 + t_uv) >> 1;                                                          \
-                FUNC(top_y[2 * x - 1], uv0 & 0xff, (uv0 >> 16), top_dst + (2 * x - 1) * XSTEP);                      \
-                FUNC(top_y[2 * x - 0], uv1 & 0xff, (uv1 >> 16), top_dst + (2 * x - 0) * XSTEP);                      \
-            }                                                                                                        \
-            if (bottom_y != NULL) {                                                                                  \
-                const uint32_t uv0 = (diag_03 + l_uv) >> 1;                                                          \
-                const uint32_t uv1 = (diag_12 + uv) >> 1;                                                            \
-                FUNC(bottom_y[2 * x - 1], uv0 & 0xff, (uv0 >> 16), bottom_dst + (2 * x - 1) * XSTEP);                \
-                FUNC(bottom_y[2 * x + 0], uv1 & 0xff, (uv1 >> 16), bottom_dst + (2 * x + 0) * XSTEP);                \
-            }                                                                                                        \
-            tl_uv = t_uv;                                                                                            \
-            l_uv = uv;                                                                                               \
-        }                                                                                                            \
-        if (!(len & 1)) {                                                                                            \
-            {                                                                                                        \
-                const uint32_t uv0 = (3 * tl_uv + l_uv + 0x00020002u) >> 2;                                          \
-                FUNC(top_y[len - 1], uv0 & 0xff, (uv0 >> 16), top_dst + (len - 1) * XSTEP);                          \
-            }                                                                                                        \
-            if (bottom_y != NULL) {                                                                                  \
-                const uint32_t uv0 = (3 * l_uv + tl_uv + 0x00020002u) >> 2;                                          \
-                FUNC(bottom_y[len - 1], uv0 & 0xff, (uv0 >> 16), bottom_dst + (len - 1) * XSTEP);                    \
-            }                                                                                                        \
-        }                                                                                                            \
-    }
+#define UPSAMPLE_FUNC(FUNC_NAME, FUNC, XSTEP)                                  \
+  static void FUNC_NAME(const uint8_t *top_y, const uint8_t *bottom_y,         \
+                        const uint8_t *top_u, const uint8_t *top_v,            \
+                        const uint8_t *cur_u, const uint8_t *cur_v,            \
+                        uint8_t *top_dst, uint8_t *bottom_dst, int len) {      \
+    int x;                                                                     \
+    const int last_pixel_pair = (len - 1) >> 1;                                \
+    uint32_t tl_uv = LOAD_UV(top_u[0], top_v[0]); /* top-left sample */        \
+    uint32_t l_uv = LOAD_UV(cur_u[0], cur_v[0]);  /* left-sample */            \
+    assert(top_y != NULL);                                                     \
+    {                                                                          \
+      const uint32_t uv0 = (3 * tl_uv + l_uv + 0x00020002u) >> 2;              \
+      FUNC(top_y[0], uv0 & 0xff, (uv0 >> 16), top_dst);                        \
+    }                                                                          \
+    if (bottom_y != NULL) {                                                    \
+      const uint32_t uv0 = (3 * l_uv + tl_uv + 0x00020002u) >> 2;              \
+      FUNC(bottom_y[0], uv0 & 0xff, (uv0 >> 16), bottom_dst);                  \
+    }                                                                          \
+    for (x = 1; x <= last_pixel_pair; ++x) {                                   \
+      const uint32_t t_uv = LOAD_UV(top_u[x], top_v[x]); /* top sample */      \
+      const uint32_t uv = LOAD_UV(cur_u[x], cur_v[x]);   /* sample */          \
+      /* precompute invariant values associated with first and second          \
+       * diagonals*/                                                           \
+      const uint32_t avg = tl_uv + t_uv + l_uv + uv + 0x00080008u;             \
+      const uint32_t diag_12 = (avg + 2 * (t_uv + l_uv)) >> 3;                 \
+      const uint32_t diag_03 = (avg + 2 * (tl_uv + uv)) >> 3;                  \
+      {                                                                        \
+        const uint32_t uv0 = (diag_12 + tl_uv) >> 1;                           \
+        const uint32_t uv1 = (diag_03 + t_uv) >> 1;                            \
+        FUNC(top_y[2 * x - 1], uv0 & 0xff, (uv0 >> 16),                        \
+             top_dst + (2 * x - 1) * XSTEP);                                   \
+        FUNC(top_y[2 * x - 0], uv1 & 0xff, (uv1 >> 16),                        \
+             top_dst + (2 * x - 0) * XSTEP);                                   \
+      }                                                                        \
+      if (bottom_y != NULL) {                                                  \
+        const uint32_t uv0 = (diag_03 + l_uv) >> 1;                            \
+        const uint32_t uv1 = (diag_12 + uv) >> 1;                              \
+        FUNC(bottom_y[2 * x - 1], uv0 & 0xff, (uv0 >> 16),                     \
+             bottom_dst + (2 * x - 1) * XSTEP);                                \
+        FUNC(bottom_y[2 * x + 0], uv1 & 0xff, (uv1 >> 16),                     \
+             bottom_dst + (2 * x + 0) * XSTEP);                                \
+      }                                                                        \
+      tl_uv = t_uv;                                                            \
+      l_uv = uv;                                                               \
+    }                                                                          \
+    if (!(len & 1)) {                                                          \
+      {                                                                        \
+        const uint32_t uv0 = (3 * tl_uv + l_uv + 0x00020002u) >> 2;            \
+        FUNC(top_y[len - 1], uv0 & 0xff, (uv0 >> 16),                          \
+             top_dst + (len - 1) * XSTEP);                                     \
+      }                                                                        \
+      if (bottom_y != NULL) {                                                  \
+        const uint32_t uv0 = (3 * l_uv + tl_uv + 0x00020002u) >> 2;            \
+        FUNC(bottom_y[len - 1], uv0 & 0xff, (uv0 >> 16),                       \
+             bottom_dst + (len - 1) * XSTEP);                                  \
+      }                                                                        \
+    }                                                                          \
+  }
 
 // All variants implemented.
 UPSAMPLE_FUNC(UpsampleRgbLinePair,      YuvToRgb,      3)
@@ -237,11 +238,13 @@ WEBP_TSAN_IGNORE_FUNCTION void WebPInitUpsamplersMIPSdspR2(void) {
 //------------------------------------------------------------------------------
 // YUV444 converter
 
-#define YUV444_FUNC(FUNC_NAME, FUNC, XSTEP)                                                              \
-    static void FUNC_NAME(const uint8_t* y, const uint8_t* u, const uint8_t* v, uint8_t* dst, int len) { \
-        int i;                                                                                           \
-        for (i = 0; i < len; ++i) FUNC(y[i], u[i], v[i], &dst[i * XSTEP]);                               \
-    }
+#define YUV444_FUNC(FUNC_NAME, FUNC, XSTEP)                                    \
+  static void FUNC_NAME(const uint8_t *y, const uint8_t *u, const uint8_t *v,  \
+                        uint8_t *dst, int len) {                               \
+    int i;                                                                     \
+    for (i = 0; i < len; ++i)                                                  \
+      FUNC(y[i], u[i], v[i], &dst[i * XSTEP]);                                 \
+  }
 
 YUV444_FUNC(Yuv444ToRgb,      YuvToRgb,      3)
 YUV444_FUNC(Yuv444ToBgr,      YuvToBgr,      3)

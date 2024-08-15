@@ -32,15 +32,15 @@ WEBP_EXTERN(int) WebPGetExtrasVersion(void);
 
 // Import luma sample (gray scale image) into 'picture'. The 'picture'
 // width and height must be set prior to calling this function.
-WEBP_EXTERN(int) WebPImportGray(const uint8_t* gray, WebPPicture* picture);
+WEBP_EXTERN(int) WebPImportGray(const uint8_t *gray, WebPPicture *picture);
 
 // Import rgb sample in RGB565 packed format into 'picture'. The 'picture'
 // width and height must be set prior to calling this function.
-WEBP_EXTERN(int) WebPImportRGB565(const uint8_t* rgb565, WebPPicture* pic);
+WEBP_EXTERN(int) WebPImportRGB565(const uint8_t *rgb565, WebPPicture *pic);
 
 // Import rgb sample in RGB4444 packed format into 'picture'. The 'picture'
 // width and height must be set prior to calling this function.
-WEBP_EXTERN(int) WebPImportRGB4444(const uint8_t* rgb4444, WebPPicture* pic);
+WEBP_EXTERN(int) WebPImportRGB4444(const uint8_t *rgb4444, WebPPicture *pic);
 
 //------------------------------------------------------------------------------
 

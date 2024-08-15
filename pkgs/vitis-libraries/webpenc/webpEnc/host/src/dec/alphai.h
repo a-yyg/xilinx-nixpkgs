@@ -14,8 +14,8 @@
 #ifndef WEBP_DEC_ALPHAI_H_
 #define WEBP_DEC_ALPHAI_H_
 
-#include "./webpi.h"
 #include "../utils/filters.h"
+#include "./webpi.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -25,26 +25,26 @@ struct VP8LDecoder; // Defined in dec/vp8li.h.
 
 typedef struct ALPHDecoder ALPHDecoder;
 struct ALPHDecoder {
-    int width_;
-    int height_;
-    int method_;
-    WEBP_FILTER_TYPE filter_;
-    int pre_processing_;
-    struct VP8LDecoder* vp8l_dec_;
-    VP8Io io_;
-    int use_8b_decode; // Although alpha channel requires only 1 byte per
-                       // pixel, sometimes VP8LDecoder may need to allocate
-                       // 4 bytes per pixel internally during decode.
+  int width_;
+  int height_;
+  int method_;
+  WEBP_FILTER_TYPE filter_;
+  int pre_processing_;
+  struct VP8LDecoder *vp8l_dec_;
+  VP8Io io_;
+  int use_8b_decode; // Although alpha channel requires only 1 byte per
+                     // pixel, sometimes VP8LDecoder may need to allocate
+                     // 4 bytes per pixel internally during decode.
 };
 
 //------------------------------------------------------------------------------
 // internal functions. Not public.
 
 // Allocates a new alpha decoder instance.
-ALPHDecoder* ALPHNew(void);
+ALPHDecoder *ALPHNew(void);
 
 // Clears and deallocates an alpha decoder instance.
-void ALPHDelete(ALPHDecoder* const dec);
+void ALPHDelete(ALPHDecoder *const dec);
 
 //------------------------------------------------------------------------------
 

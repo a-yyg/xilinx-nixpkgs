@@ -22,37 +22,36 @@ extern "C" {
 
 // Struct for holding the tree header in coded form.
 typedef struct {
-    uint8_t code;       // value (0..15) or escape code (16,17,18)
-    uint8_t extra_bits; // extra bits for escape codes
+  uint8_t code;       // value (0..15) or escape code (16,17,18)
+  uint8_t extra_bits; // extra bits for escape codes
 } HuffmanTreeToken;
 
 // Struct to represent the tree codes (depth and bits array).
 typedef struct {
-    int num_symbols;       // Number of symbols.
-    uint8_t* code_lengths; // Code lengths of the symbols.
-    uint16_t* codes;       // Symbol Codes.
+  int num_symbols;       // Number of symbols.
+  uint8_t *code_lengths; // Code lengths of the symbols.
+  uint16_t *codes;       // Symbol Codes.
 } HuffmanTreeCode;
 
 // Struct to represent the Huffman tree.
 typedef struct {
-    uint32_t total_count_; // Symbol frequency.
-    int value_;            // Symbol value.
-    int pool_index_left_;  // Index for the left sub-tree.
-    int pool_index_right_; // Index for the right sub-tree.
+  uint32_t total_count_; // Symbol frequency.
+  int value_;            // Symbol value.
+  int pool_index_left_;  // Index for the left sub-tree.
+  int pool_index_right_; // Index for the right sub-tree.
 } HuffmanTree;
 
 // Turn the Huffman tree into a token sequence.
 // Returns the number of tokens used.
-int VP8LCreateCompressedHuffmanTree(const HuffmanTreeCode* const tree, HuffmanTreeToken* tokens, int max_tokens);
+int VP8LCreateCompressedHuffmanTree(const HuffmanTreeCode *const tree,
+                                    HuffmanTreeToken *tokens, int max_tokens);
 
 // Create an optimized tree, and tokenize it.
 // 'buf_rle' and 'huff_tree' are pre-allocated and the 'tree' is the constructed
 // huffman code tree.
-void VP8LCreateHuffmanTree(uint32_t* const histogram,
-                           int tree_depth_limit,
-                           uint8_t* const buf_rle,
-                           HuffmanTree* const huff_tree,
-                           HuffmanTreeCode* const tree);
+void VP8LCreateHuffmanTree(uint32_t *const histogram, int tree_depth_limit,
+                           uint8_t *const buf_rle, HuffmanTree *const huff_tree,
+                           HuffmanTreeCode *const tree);
 
 #ifdef __cplusplus
 }

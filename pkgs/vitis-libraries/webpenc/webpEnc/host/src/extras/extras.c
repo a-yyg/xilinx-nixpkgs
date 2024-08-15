@@ -26,16 +26,18 @@ int WebPGetExtrasVersion(void) {
 
 //------------------------------------------------------------------------------
 
-int WebPImportGray(const uint8_t* gray_data, WebPPicture* pic) {
+int WebPImportGray(const uint8_t *gray_data, WebPPicture *pic) {
   int y, width, uv_width;
-  if (pic == NULL || gray_data == NULL) return 0;
+  if (pic == NULL || gray_data == NULL)
+    return 0;
   pic->colorspace = WEBP_YUV420;
-  if (!WebPPictureAlloc(pic)) return 0;
+  if (!WebPPictureAlloc(pic))
+    return 0;
   width = pic->width;
   uv_width = (width + 1) >> 1;
   for (y = 0; y < pic->height; ++y) {
     memcpy(pic->y + y * pic->y_stride, gray_data, width);
-    gray_data += width;    // <- we could use some 'data_stride' here if needed
+    gray_data += width; // <- we could use some 'data_stride' here if needed
     if ((y & 1) == 0) {
       memset(pic->u + (y >> 1) * pic->uv_stride, 128, uv_width);
       memset(pic->v + (y >> 1) * pic->uv_stride, 128, uv_width);
@@ -44,15 +46,17 @@ int WebPImportGray(const uint8_t* gray_data, WebPPicture* pic) {
   return 1;
 }
 
-int WebPImportRGB565(const uint8_t* rgb565, WebPPicture* pic) {
+int WebPImportRGB565(const uint8_t *rgb565, WebPPicture *pic) {
   int x, y;
-  if (pic == NULL || rgb565 == NULL) return 0;
+  if (pic == NULL || rgb565 == NULL)
+    return 0;
   pic->colorspace = WEBP_YUV420;
   pic->use_argb = 1;
-  if (!WebPPictureAlloc(pic)) return 0;
+  if (!WebPPictureAlloc(pic))
+    return 0;
   for (y = 0; y < pic->height; ++y) {
     const int width = pic->width;
-    uint32_t* dst = pic->argb + y * pic->argb_stride;
+    uint32_t *dst = pic->argb + y * pic->argb_stride;
     for (x = 0; x < width; ++x) {
 #ifdef WEBP_SWAP_16BIT_CSP
       const uint32_t rg = rgb565[2 * x + 1];
@@ -75,15 +79,17 @@ int WebPImportRGB565(const uint8_t* rgb565, WebPPicture* pic) {
   return 1;
 }
 
-int WebPImportRGB4444(const uint8_t* rgb4444, WebPPicture* pic) {
+int WebPImportRGB4444(const uint8_t *rgb4444, WebPPicture *pic) {
   int x, y;
-  if (pic == NULL || rgb4444 == NULL) return 0;
+  if (pic == NULL || rgb4444 == NULL)
+    return 0;
   pic->colorspace = WEBP_YUV420;
   pic->use_argb = 1;
-  if (!WebPPictureAlloc(pic)) return 0;
+  if (!WebPPictureAlloc(pic))
+    return 0;
   for (y = 0; y < pic->height; ++y) {
     const int width = pic->width;
-    uint32_t* dst = pic->argb + y * pic->argb_stride;
+    uint32_t *dst = pic->argb + y * pic->argb_stride;
     for (x = 0; x < width; ++x) {
 #ifdef WEBP_SWAP_16BIT_CSP
       const uint32_t rg = rgb4444[2 * x + 1];

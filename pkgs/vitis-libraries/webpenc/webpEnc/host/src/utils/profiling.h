@@ -142,17 +142,20 @@ extern int countRefineUsingDist_2;
 
 typedef LARGE_INTEGER StopProfilingWatch;
 
-static WEBP_INLINE void StartProfiling(StopProfilingWatch* watch) {
-    QueryPerformanceCounter(watch);
+static WEBP_INLINE void StartProfiling(StopProfilingWatch *watch) {
+  QueryPerformanceCounter(watch);
 }
 
-static WEBP_INLINE double StopProfiling(StopProfilingWatch* watch) {
-    const LARGE_INTEGER old_value = *watch;
-    LARGE_INTEGER freq;
-    if (!QueryPerformanceCounter(watch)) return 0.0;
-    if (!QueryPerformanceFrequency(&freq)) return 0.0;
-    if (freq.QuadPart == 0) return 0.0;
-    return (watch->QuadPart - old_value.QuadPart) / (double)freq.QuadPart;
+static WEBP_INLINE double StopProfiling(StopProfilingWatch *watch) {
+  const LARGE_INTEGER old_value = *watch;
+  LARGE_INTEGER freq;
+  if (!QueryPerformanceCounter(watch))
+    return 0.0;
+  if (!QueryPerformanceFrequency(&freq))
+    return 0.0;
+  if (freq.QuadPart == 0)
+    return 0.0;
+  return (watch->QuadPart - old_value.QuadPart) / (double)freq.QuadPart;
 }
 
 #else               /* !_WIN32 */
@@ -161,28 +164,29 @@ static WEBP_INLINE double StopProfiling(StopProfilingWatch* watch) {
 
 typedef struct timeval StopProfilingWatch;
 
-static WEBP_INLINE void StartProfiling(StopProfilingWatch* watch) {
-    gettimeofday(watch, NULL);
+static WEBP_INLINE void StartProfiling(StopProfilingWatch *watch) {
+  gettimeofday(watch, NULL);
 }
 
-static WEBP_INLINE double StopProfiling(StopProfilingWatch* watch, double* total_time, int* count) {
-    struct timeval old_value;
-    double delta_sec, delta_usec;
+static WEBP_INLINE double StopProfiling(StopProfilingWatch *watch,
+                                        double *total_time, int *count) {
+  struct timeval old_value;
+  double delta_sec, delta_usec;
 #if 1
-    old_value.tv_sec = watch->tv_sec;
-    old_value.tv_usec = watch->tv_usec;
+  old_value.tv_sec = watch->tv_sec;
+  old_value.tv_usec = watch->tv_usec;
 #else
-    memcpy(&old_value, watch, sizeof(old_value));
+  memcpy(&old_value, watch, sizeof(old_value));
 #endif
-    gettimeofday(watch, NULL);
-    delta_sec = (double)watch->tv_sec - old_value.tv_sec;
-    delta_usec = (double)watch->tv_usec - old_value.tv_usec;
-    double cur_time = delta_sec + delta_usec / 1000000.0;
-    cur_time *= 1000;
-    *total_time += cur_time;
-    (*count)++;
+  gettimeofday(watch, NULL);
+  delta_sec = (double)watch->tv_sec - old_value.tv_sec;
+  delta_usec = (double)watch->tv_usec - old_value.tv_usec;
+  double cur_time = delta_sec + delta_usec / 1000000.0;
+  cur_time *= 1000;
+  *total_time += cur_time;
+  (*count)++;
 
-    return cur_time;
+  return cur_time;
 }
 
 void DisplayDecodeProfilingResult();

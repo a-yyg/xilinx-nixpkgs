@@ -18,7 +18,8 @@
 
 #ifndef _MSC_VER
 #include <inttypes.h>
-#if defined(__cplusplus) || !defined(__STRICT_ANSI__) || (defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L)
+#if defined(__cplusplus) || !defined(__STRICT_ANSI__) ||                       \
+    (defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L)
 #define WEBP_INLINE inline
 #else
 #define WEBP_INLINE

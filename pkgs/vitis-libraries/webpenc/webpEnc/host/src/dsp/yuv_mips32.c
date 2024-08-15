@@ -22,59 +22,63 @@
 //------------------------------------------------------------------------------
 // simple point-sampling
 
-#define ROW_FUNC(FUNC_NAME, XSTEP, R, G, B, A)                                                           \
-    static void FUNC_NAME(const uint8_t* y, const uint8_t* u, const uint8_t* v, uint8_t* dst, int len) { \
-        int i, r, g, b;                                                                                  \
-        int temp0, temp1, temp2, temp3, temp4;                                                           \
-        for (i = 0; i < (len >> 1); i++) {                                                               \
-            temp1 = kVToR * v[0];                                                                        \
-            temp3 = kVToG * v[0];                                                                        \
-            temp2 = kUToG * u[0];                                                                        \
-            temp4 = kUToB * u[0];                                                                        \
-            temp0 = kYScale * y[0];                                                                      \
-            temp1 += kRCst;                                                                              \
-            temp3 -= kGCst;                                                                              \
-            temp2 += temp3;                                                                              \
-            temp4 += kBCst;                                                                              \
-            r = VP8Clip8(temp0 + temp1);                                                                 \
-            g = VP8Clip8(temp0 - temp2);                                                                 \
-            b = VP8Clip8(temp0 + temp4);                                                                 \
-            temp0 = kYScale * y[1];                                                                      \
-            dst[R] = r;                                                                                  \
-            dst[G] = g;                                                                                  \
-            dst[B] = b;                                                                                  \
-            if (A) dst[A] = 0xff;                                                                        \
-            r = VP8Clip8(temp0 + temp1);                                                                 \
-            g = VP8Clip8(temp0 - temp2);                                                                 \
-            b = VP8Clip8(temp0 + temp4);                                                                 \
-            dst[R + XSTEP] = r;                                                                          \
-            dst[G + XSTEP] = g;                                                                          \
-            dst[B + XSTEP] = b;                                                                          \
-            if (A) dst[A + XSTEP] = 0xff;                                                                \
-            y += 2;                                                                                      \
-            ++u;                                                                                         \
-            ++v;                                                                                         \
-            dst += 2 * XSTEP;                                                                            \
-        }                                                                                                \
-        if (len & 1) {                                                                                   \
-            temp1 = kVToR * v[0];                                                                        \
-            temp3 = kVToG * v[0];                                                                        \
-            temp2 = kUToG * u[0];                                                                        \
-            temp4 = kUToB * u[0];                                                                        \
-            temp0 = kYScale * y[0];                                                                      \
-            temp1 += kRCst;                                                                              \
-            temp3 -= kGCst;                                                                              \
-            temp2 += temp3;                                                                              \
-            temp4 += kBCst;                                                                              \
-            r = VP8Clip8(temp0 + temp1);                                                                 \
-            g = VP8Clip8(temp0 - temp2);                                                                 \
-            b = VP8Clip8(temp0 + temp4);                                                                 \
-            dst[R] = r;                                                                                  \
-            dst[G] = g;                                                                                  \
-            dst[B] = b;                                                                                  \
-            if (A) dst[A] = 0xff;                                                                        \
-        }                                                                                                \
-    }
+#define ROW_FUNC(FUNC_NAME, XSTEP, R, G, B, A)                                 \
+  static void FUNC_NAME(const uint8_t *y, const uint8_t *u, const uint8_t *v,  \
+                        uint8_t *dst, int len) {                               \
+    int i, r, g, b;                                                            \
+    int temp0, temp1, temp2, temp3, temp4;                                     \
+    for (i = 0; i < (len >> 1); i++) {                                         \
+      temp1 = kVToR * v[0];                                                    \
+      temp3 = kVToG * v[0];                                                    \
+      temp2 = kUToG * u[0];                                                    \
+      temp4 = kUToB * u[0];                                                    \
+      temp0 = kYScale * y[0];                                                  \
+      temp1 += kRCst;                                                          \
+      temp3 -= kGCst;                                                          \
+      temp2 += temp3;                                                          \
+      temp4 += kBCst;                                                          \
+      r = VP8Clip8(temp0 + temp1);                                             \
+      g = VP8Clip8(temp0 - temp2);                                             \
+      b = VP8Clip8(temp0 + temp4);                                             \
+      temp0 = kYScale * y[1];                                                  \
+      dst[R] = r;                                                              \
+      dst[G] = g;                                                              \
+      dst[B] = b;                                                              \
+      if (A)                                                                   \
+        dst[A] = 0xff;                                                         \
+      r = VP8Clip8(temp0 + temp1);                                             \
+      g = VP8Clip8(temp0 - temp2);                                             \
+      b = VP8Clip8(temp0 + temp4);                                             \
+      dst[R + XSTEP] = r;                                                      \
+      dst[G + XSTEP] = g;                                                      \
+      dst[B + XSTEP] = b;                                                      \
+      if (A)                                                                   \
+        dst[A + XSTEP] = 0xff;                                                 \
+      y += 2;                                                                  \
+      ++u;                                                                     \
+      ++v;                                                                     \
+      dst += 2 * XSTEP;                                                        \
+    }                                                                          \
+    if (len & 1) {                                                             \
+      temp1 = kVToR * v[0];                                                    \
+      temp3 = kVToG * v[0];                                                    \
+      temp2 = kUToG * u[0];                                                    \
+      temp4 = kUToB * u[0];                                                    \
+      temp0 = kYScale * y[0];                                                  \
+      temp1 += kRCst;                                                          \
+      temp3 -= kGCst;                                                          \
+      temp2 += temp3;                                                          \
+      temp4 += kBCst;                                                          \
+      r = VP8Clip8(temp0 + temp1);                                             \
+      g = VP8Clip8(temp0 - temp2);                                             \
+      b = VP8Clip8(temp0 + temp4);                                             \
+      dst[R] = r;                                                              \
+      dst[G] = g;                                                              \
+      dst[B] = b;                                                              \
+      if (A)                                                                   \
+        dst[A] = 0xff;                                                         \
+    }                                                                          \
+  }
 
 ROW_FUNC(YuvToRgbRow,      3, 0, 1, 2, 0)
 ROW_FUNC(YuvToRgbaRow,     4, 0, 1, 2, 3)

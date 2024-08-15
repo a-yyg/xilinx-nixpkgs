@@ -21,12 +21,13 @@
 #define VP8_SIGNATURE 0x9d012a            // Signature in VP8 data.
 #define VP8_MAX_PARTITION0_SIZE (1 << 19) // max size of mode partition
 #define VP8_MAX_PARTITION_SIZE (1 << 24)  // max size for token partition
-#define VP8_FRAME_HEADER_SIZE 10          // Size of the frame header within VP8 data.
+#define VP8_FRAME_HEADER_SIZE 10 // Size of the frame header within VP8 data.
 
 // VP8L related constants.
-#define VP8L_SIGNATURE_SIZE 1    // VP8L signature size.
-#define VP8L_MAGIC_BYTE 0x2f     // VP8L signature byte.
-#define VP8L_IMAGE_SIZE_BITS 14  // Number of bits used to store
+#define VP8L_SIGNATURE_SIZE 1 // VP8L signature size.
+#define VP8L_MAGIC_BYTE 0x2f  // VP8L signature byte.
+#define VP8L_IMAGE_SIZE_BITS                                                   \
+  14                             // Number of bits used to store
                                  // width and height.
 #define VP8L_VERSION_BITS 3      // 3 bits reserved for version.
 #define VP8L_VERSION 0           // version 0
@@ -48,15 +49,17 @@
 #define MIN_HUFFMAN_BITS 2 // min number of Huffman bits
 #define MAX_HUFFMAN_BITS 9 // max number of Huffman bits
 
-#define TRANSFORM_PRESENT 1 // The bit to be written when next data
-                            // to be read is a transform.
-#define NUM_TRANSFORMS 4    // Maximum number of allowed transform
-                            // in a bitstream.
+#define TRANSFORM_PRESENT                                                      \
+  1 // The bit to be written when next data
+    // to be read is a transform.
+#define NUM_TRANSFORMS                                                         \
+  4 // Maximum number of allowed transform
+    // in a bitstream.
 typedef enum {
-    PREDICTOR_TRANSFORM = 0,
-    CROSS_COLOR_TRANSFORM = 1,
-    SUBTRACT_GREEN = 2,
-    COLOR_INDEXING_TRANSFORM = 3
+  PREDICTOR_TRANSFORM = 0,
+  CROSS_COLOR_TRANSFORM = 1,
+  SUBTRACT_GREEN = 2,
+  COLOR_INDEXING_TRANSFORM = 3
 } VP8LImageTransformType;
 
 // Alpha related constants.

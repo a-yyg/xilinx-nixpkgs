@@ -13,13 +13,13 @@
 #ifndef WEBP_ENC_DELTA_PALETTIZATION_H_
 #define WEBP_ENC_DELTA_PALETTIZATION_H_
 
-#include "../webp/encode.h"
 #include "../enc/vp8li.h"
+#include "../webp/encode.h"
 
 // Replaces enc->argb_[] input by a palettizable approximation of it,
 // and generates optimal enc->palette_[].
 // This function can revert enc->use_palette_ / enc->use_predict_ flag
 // if delta-palettization is not producing expected saving.
-WebPEncodingError WebPSearchOptimalDeltaPalette(VP8LEncoder* const enc);
+WebPEncodingError WebPSearchOptimalDeltaPalette(VP8LEncoder *const enc);
 
 #endif // WEBP_ENC_DELTA_PALETTIZATION_H_
