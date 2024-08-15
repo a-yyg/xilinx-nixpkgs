@@ -36,6 +36,10 @@
 #include <stdio.h>
 #endif
 
+#include "time.h"
+
+#define timediff(s,e) ((e.tv_sec - s.tv_sec)*10e6 + (e.tv_usec - s.tv_usec))
+
 void writevec2file(char* fpname, uint8_t* vec, int size) {
     FILE* fp = fopen(fpname, "w");
     for (int i = 0; i < size; i++) {
@@ -444,7 +448,12 @@ int WebPEncodeAsync(const int Numpic, const int Numbatch, const WebPConfig* conf
     StartProfiling(&watch);
     StartProfiling(&watchloop);
 
+    struct timeval start, end;
+    double t0;
+
     for (int i = 0; i < Nloop; i++) {
+	gettimeofday(&start, NULL);
+
         int nb = NumpicRest > Numbatch ? Numbatch : NumpicRest; // number of pictures traited in this iteration
         NumpicRest -= Numbatch;                                 // number of pictures to be traited in future iterations
         // std::cout << "Npic: " << nb << "  " << NumpicRest << "  " << Nloop << std::endl;
@@ -456,7 +465,13 @@ int WebPEncodeAsync(const int Numpic, const int Numbatch, const WebPConfig* conf
         fprintf(stderr, "\n*** Picture: %d - %d,  Buffer: %d, Instance: %d, Event: %d *** \n", (i)*Numbatch + 1,
                 (i)*Numbatch + nb, buf, bufinst, bufevent);
 
+	gettimeofday(&end, NULL);
+	t0 = (float)(timediff(start,end)) / 10e3;
+	printf("[1]: %f\n", t0);
+
         if (i >= (NasyncDepth * Ninstances)) {
+            gettimeofday(&start, NULL);
+
             int bufp = i - NasyncDepth * Ninstances; // previous picture (finished)
 
             // Wait for events
@@ -465,10 +480,20 @@ int WebPEncodeAsync(const int Numpic, const int Numbatch, const WebPConfig* conf
                 fprintf(stderr, "%s %d %s\n", __func__, __LINE__, oclErrorCode(err));
             };
 
+	    gettimeofday(&end, NULL);
+	    t0 = (float)(timediff(start,end)) / 10e3;
+	    printf("[2]: %f\n", t0);
+	    gettimeofday(&start, NULL);
+
             memcpy(output_prob[bufp], encloopparaAsync[buf].probcpu, output_size_prob);
             memcpy(pout_bw[bufp], encloopparaAsync[buf].bwcpu, output_size_bw);
             memcpy(pout_ret[bufp], encloopparaAsync[buf].retcpu, output_size_ret);
             memcpy(pout_pred[bufp], encloopparaAsync[buf].predcpu, output_size_pred);
+
+	    gettimeofday(&end, NULL);
+	    t0 = (float)(timediff(start,end)) / 10e3;
+	    printf("[3]: %f\n", t0);
+	    gettimeofday(&start, NULL);
 
             // Release previous used events
             for (int k = 0; k < event_host2dev[bufevent].size(); k++) {
@@ -495,7 +520,13 @@ int WebPEncodeAsync(const int Numpic, const int Numbatch, const WebPConfig* conf
                     fprintf(stderr, "%s %d %s\n", __func__, __LINE__, oclErrorCode(err));
                 };
             };
+
+	    gettimeofday(&end, NULL);
+	    t0 = (float)(timediff(start,end)) / 10e3;
+	    printf("[3]: %f\n", t0);
         };
+
+	gettimeofday(&start, NULL);
 
         std::cout << "HtoD webpen.c" << std::endl;
 
@@ -503,17 +534,62 @@ int WebPEncodeAsync(const int Numpic, const int Numbatch, const WebPConfig* conf
         VP8EncTokenLoopAsyncHost2Device(nb, &enc[i * Numbatch], &picinfo[i * Numbatch], buf, 0, NULL,
                                         event_host2dev[bufevent]);
 
+	gettimeofday(&end, NULL);
+	t0 = (float)(timediff(start,end)) / 10e3;
+	printf("[4]: %f\n", t0);
+	gettimeofday(&start, NULL);
+
         // Pred kernel
         VP8EncTokenLoopAsyncPredKernel(buf, event_host2dev[bufevent].size(), event_host2dev[bufevent].data(),
                                        event_kernelpred[bufevent]);
+
+	gettimeofday(&end, NULL);
+	t0 = (float)(timediff(start,end)) / 10e3;
+	printf("[5]: %f\n", t0);
+	gettimeofday(&start, NULL);
 
         // AC kernel
         VP8EncTokenLoopAsyncACKernel(buf, event_kernelpred[bufevent].size(), event_kernelpred[bufevent].data(),
                                      event_kernelac[bufevent]);
 
+	gettimeofday(&end, NULL);
+	t0 = (float)(timediff(start,end)) / 10e3;
+	printf("[6]: %f\n", t0);
+	gettimeofday(&start, NULL);
+
         // Device to Host
         VP8EncTokenLoopAsyncDevice2Host(buf, event_kernelac[bufevent].size(), event_kernelac[bufevent].data(),
                                         event_dev2host[bufevent]);
+
+	gettimeofday(&end, NULL);
+	t0 = (float)(timediff(start,end)) / 10e3;
+	printf("[7]: %f\n", t0);
+
+
+        for (int i = 0; i < NasyncDepth * Ninstances; ++i) {
+            clFlush(hardware.mQueue);
+ 
+            cl_ulong start, end;
+            clGetEventProfilingInfo(event_host2dev[i][0], CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &start, NULL);
+            clGetEventProfilingInfo(event_host2dev[i][0], CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &end, NULL);
+            float time = (end - start) * 1.0e-6f;
+            printf("Time for Host2Dev[%d] = %fms\n", i, time);
+    
+            clGetEventProfilingInfo(event_kernelpred[i][0], CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &start, NULL);
+            clGetEventProfilingInfo(event_kernelpred[i][0], CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &end, NULL);
+            time = (end - start) * 1.0e-6f;
+            printf("Time for KernelPred[%d] = %fms\n", i, time);
+    
+            clGetEventProfilingInfo(event_kernelac[i][0], CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &start, NULL);
+            clGetEventProfilingInfo(event_kernelac[i][0], CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &end, NULL);
+            time = (end - start) * 1.0e-6f;
+            printf("Time for KernelAc[%d] = %fms\n", i, time);
+    
+            clGetEventProfilingInfo(event_dev2host[i][0], CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &start, NULL);
+            clGetEventProfilingInfo(event_dev2host[i][0], CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &end, NULL);
+            time = (end - start) * 1.0e-6f;
+            printf("Time for Dev2Host[%d] = %fms\n", i, time);
+        }
     }
 
     err = clFinish(hardware.mQueue);

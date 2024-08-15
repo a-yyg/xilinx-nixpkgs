@@ -248,7 +248,7 @@ oclHardware getOclHardware(cl_device_type type, char* target_device) {
         }
 
         // cl_command_queue queue = clCreateCommandQueue(context, device_id, 0, &err);
-        cl_command_queue queue = clCreateCommandQueue(context, device_id, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &err);
+        cl_command_queue queue = clCreateCommandQueue(context, device_id, CL_QUEUE_PROFILING_ENABLE | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &err);
         logger.logCreateCommandQueue(err);
         if (err != CL_SUCCESS) {
             std::cout << oclErrorCode(err) << "\n";
