@@ -1,0 +1,16 @@
+final: prev:
+let
+  gst = prev.callPackage ./gst {};
+in
+{
+  xrtPackages = prev.callPackage ./xrt {};
+  # gst_all_1 = prev.gst_all_1 // {
+  #     gst-plugins-bad = prev.gst_all_1.gst-plugins-bad.overrideAttrs (oldAttrs: {
+  #     version = "1.18.5";
+  #     src = prev.fetchzip {
+  #       url = "https://github.com/Xilinx/gst-plugins-bad/archive/refs/tags/xlnx-rebase-v1.18.5_2022.2.zip";
+  #       sha256 = "sha256-NXSybx37rhBva6gY8K5X3mIMiEfIFEaM6maG76JVaVs=";
+  #     };
+  #   });
+  # };
+}

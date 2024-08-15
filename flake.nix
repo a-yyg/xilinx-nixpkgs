@@ -22,8 +22,8 @@
       };
     };
 
-    mkXclbinFirmwareKV260 = pkgs-x86.callPackage ./libs/xclbin {};
-    webpEncFirmware = mkXclbinFirmwareKV260 ./webpEnc.xclbin;
+    # mkXclbinFirmwareKV260 = pkgs-x86.callPackage ./libs/xclbin {};
+    # webpEncFirmware = mkXclbinFirmwareKV260 ./webpEnc.xclbin;
     allPkgs = pkgs: pkgs.lib.attrsets.filterAttrs
       (n: v: pkgs-x86.lib.attrsets.isDerivation v)
       (pkgs.callPackage ./pkgs/default.nix {});
@@ -43,5 +43,17 @@
     };
 
     # overlays.default = import ./pkgs/overlay.nix;
+
+    devShells.x86_64-linux.default = pkgs-x86.mkShell {
+      name = "cpp-dev";
+      buildInputs = with pkgs-x86; [
+        gnumake
+        cmake
+        gcc
+        clang
+        llvm
+        xrt
+      ];
+    };
   };
 }

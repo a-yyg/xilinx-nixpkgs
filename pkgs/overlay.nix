@@ -5,5 +5,6 @@
 (import ./vitis/overlay.nix)
 (import ./vitis-libraries/overlay.nix)
 (import ./libwebp/overlay.nix)
+(import ./xclbin/overlay.nix)
 ]
 # final prev
