@@ -42,7 +42,7 @@
       # };
     };
 
-    # overlays.default = import ./pkgs/overlay.nix;
+    overlays.default = import ./pkgs/overlay.nix;
 
     devShells.x86_64-linux.default = pkgs-x86.mkShell {
       name = "cpp-dev";
